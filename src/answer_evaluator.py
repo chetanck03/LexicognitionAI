@@ -1,6 +1,7 @@
 """Answer evaluation component using LLM."""
 import logging
 from typing import List
+from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import Document
@@ -15,12 +16,24 @@ class AnswerEvaluator:
     """Evaluates user answers against paper content."""
     
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=settings.llm_model,
-            temperature=0.3,  # Lower temperature for more consistent evaluation
-            max_tokens=settings.llm_max_tokens,
-            openai_api_key=settings.openai_api_key
-        )
+        # Initialize LLM based on provider
+        if settings.llm_provider == "groq":
+            self.llm = ChatGroq(
+                model=settings.llm_model,
+                temperature=0.3,  # Lower temperature for more consistent evaluation
+                max_tokens=settings.llm_max_tokens,
+                groq_api_key=settings.groq_api_key
+            )
+            logger.info(f"Using Groq API for evaluation with model: {settings.llm_model}")
+        else:
+            self.llm = ChatOpenAI(
+                model=settings.llm_model,
+                temperature=0.3,  # Lower temperature for more consistent evaluation
+                max_tokens=settings.llm_max_tokens,
+                openai_api_key=settings.openai_api_key
+            )
+            logger.info(f"Using OpenAI API for evaluation with model: {settings.llm_model}")
+        
         self.content_analyzer = ContentAnalyzer()
         self.min_score = settings.min_score
         self.max_score = settings.max_score

@@ -1,14 +1,54 @@
 """Content analysis and RAG pipeline component."""
 import logging
 from typing import List, Optional
+import hashlib
+import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
+from langchain.embeddings.base import Embeddings
 from config import settings
 from src.models import ParsedDocument, KnowledgeBase, TextChunk, Concept
 
 logger = logging.getLogger(__name__)
+
+
+class SimpleEmbeddings(Embeddings):
+    """Simple fast embeddings using TF-IDF approach - no downloads needed!"""
+    
+    def __init__(self):
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        self.vectorizer = TfidfVectorizer(max_features=384, ngram_range=(1, 2))
+        self.fitted = False
+        logger.info("Using simple TF-IDF embeddings (instant, no downloads!)")
+    
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Embed a list of documents."""
+        if not self.fitted:
+            self.vectorizer.fit(texts)
+            self.fitted = True
+        vectors = self.vectorizer.transform(texts).toarray()
+        return vectors.tolist()
+    
+    def embed_query(self, text: str) -> List[float]:
+        """Embed a single query."""
+        if not self.fitted:
+            # If not fitted yet, return a simple hash-based embedding
+            return self._hash_embedding(text)
+        vector = self.vectorizer.transform([text]).toarray()[0]
+        return vector.tolist()
+    
+    def _hash_embedding(self, text: str) -> List[float]:
+        """Create a simple hash-based embedding as fallback."""
+        # Create a deterministic embedding from text hash
+        hash_obj = hashlib.md5(text.encode())
+        hash_bytes = hash_obj.digest()
+        # Convert to 384-dimensional vector
+        embedding = []
+        for i in range(384):
+            byte_val = hash_bytes[i % len(hash_bytes)]
+            embedding.append((byte_val / 255.0) * 2 - 1)  # Normalize to [-1, 1]
+        return embedding
 
 
 class ContentAnalyzer:
@@ -17,10 +57,8 @@ class ContentAnalyzer:
     def __init__(self):
         self.chunk_size = settings.chunk_size
         self.chunk_overlap = settings.chunk_overlap
-        self.embeddings = OpenAIEmbeddings(
-            model=settings.embedding_model,
-            openai_api_key=settings.openai_api_key
-        )
+        # Use simple fast embeddings - no downloads!
+        self.embeddings = SimpleEmbeddings()
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
@@ -192,11 +230,19 @@ class ContentAnalyzer:
         Returns:
             List of relevant documents
         """
-        vector_store = FAISS.load_local(
-            vector_store_path,
-            self.embeddings,
-            allow_dangerous_deserialization=True
-        )
+        try:
+            # Try with the new parameter name
+            vector_store = FAISS.load_local(
+                vector_store_path,
+                self.embeddings,
+                allow_dangerous_deserialization=True
+            )
+        except TypeError:
+            # Fallback for older versions without this parameter
+            vector_store = FAISS.load_local(
+                vector_store_path,
+                self.embeddings
+            )
         
         results = vector_store.similarity_search(query, k=k)
         logger.info(f"Retrieved {len(results)} relevant chunks for query")

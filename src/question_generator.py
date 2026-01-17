@@ -1,6 +1,7 @@
 """Question generation component using LLM."""
 import logging
 from typing import List
+from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import Document
@@ -15,12 +16,24 @@ class QuestionGenerator:
     """Generates conceptual questions from research papers."""
     
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=settings.llm_model,
-            temperature=settings.llm_temperature,
-            max_tokens=settings.llm_max_tokens,
-            openai_api_key=settings.openai_api_key
-        )
+        # Initialize LLM based on provider
+        if settings.llm_provider == "groq":
+            self.llm = ChatGroq(
+                model=settings.llm_model,
+                temperature=settings.llm_temperature,
+                max_tokens=settings.llm_max_tokens,
+                groq_api_key=settings.groq_api_key
+            )
+            logger.info(f"Using Groq API with model: {settings.llm_model}")
+        else:
+            self.llm = ChatOpenAI(
+                model=settings.llm_model,
+                temperature=settings.llm_temperature,
+                max_tokens=settings.llm_max_tokens,
+                openai_api_key=settings.openai_api_key
+            )
+            logger.info(f"Using OpenAI API with model: {settings.llm_model}")
+        
         self.content_analyzer = ContentAnalyzer()
         self.num_questions = settings.num_questions
     

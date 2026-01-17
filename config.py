@@ -18,10 +18,14 @@ class Settings(BaseSettings):
     )
     
     # API Keys
-    openai_api_key: str
+    groq_api_key: str
+    openai_api_key: str  # Still needed for embeddings
+    
+    # LLM Provider
+    llm_provider: str = "groq"  # groq or openai
     
     # LLM Configuration
-    llm_model: str = "gpt-4-turbo-preview"
+    llm_model: str = "llama-3.1-70b-versatile"  # Groq models: llama-3.1-70b-versatile, mixtral-8x7b-32768
     llm_temperature: float = 0.7
     llm_max_tokens: int = 2000
     
