@@ -1,0 +1,49 @@
+# Render ignore file - files not needed in deployment
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+tests/
+pytest.ini
+.pytest_cache/
+
+# Development
+.env
+.env.local
+test_*.py
+
+# Git
+.git/
+.gitignore
+
+# Documentation (optional - remove if you want docs deployed)
+*.md
+!README.md
+
+# Logs (will be created on server)
+logs/
+*.log
+
+# Data (will be on persistent disk)
+data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution
+build/
+dist/
+*.egg-info/

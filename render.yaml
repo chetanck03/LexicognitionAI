@@ -1,0 +1,71 @@
+services:
+  - type: web
+    name: ai-viva-examiner
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LLM_PROVIDER
+        value: groq
+      - key: LLM_MODEL
+        value: llama-3.1-70b-versatile
+      - key: LLM_TEMPERATURE
+        value: 0.7
+      - key: LLM_MAX_TOKENS
+        value: 2000
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: EMBEDDING_DIMENSION
+        value: 1536
+      - key: VECTOR_STORE_TYPE
+        value: faiss
+      - key: VECTOR_STORE_PATH
+        value: /opt/render/project/src/data/vector_store
+      - key: MAX_FILE_SIZE_MB
+        value: 50
+      - key: NUM_QUESTIONS
+        value: 5
+      - key: QUESTION_GENERATION_TIMEOUT
+        value: 60
+      - key: EVALUATION_TIMEOUT
+        value: 10
+      - key: MIN_SCORE
+        value: 1
+      - key: MAX_SCORE
+        value: 10
+      - key: SESSION_STORAGE_TYPE
+        value: sqlite
+      - key: SESSION_DB_PATH
+        value: /opt/render/project/src/data/sessions.db
+      - key: CHUNK_SIZE
+        value: 512
+      - key: CHUNK_OVERLAP
+        value: 50
+      - key: MAX_RETRIES
+        value: 3
+      - key: RETRY_DELAY
+        value: 1
+      - key: LOG_FILE
+        value: /opt/render/project/src/logs/app.log
+      # Add these as secrets in Render Dashboard
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://ai-viva-examiner.onrender.com
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
